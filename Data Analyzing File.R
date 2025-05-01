@@ -88,55 +88,41 @@ ggsave("EPS_Graphs/top20_words_per_edition.eps", plot = top20_plot, device = "ep
 # --- Interest Words by Chapter (Filtered to Chapters 1–24) ---
 # ================================
 
-# Refined 5 interest words
+
+# Define refined interest words
 interest_words_refined <- c("creature", "monster", "fear", "father", "death")
 
-# Filter and count their frequency across chapters (limit to chapters 1–24)
+# Filter lemmatized data for interest words in chapters 1–24
 freq_interest_chap_refined <- lemmatized_data %>%
   filter(word %in% interest_words_refined, chapter <= 24) %>%
   count(book, chapter, word, sort = TRUE)
 
-# Define color palette for 5 words (more clear and distinct)
-cud_colors_refined <- c(
-  "creature" = "#1f77b4",  # clear blue
-  "monster"  = "#ff7f0e",  # bright orange
-  "fear"     = "#17becf",  # cyan (safe alternative to green)
-  "father"   = "#bcbd22",  # olive (greenish-yellow, colorblind safe)
-  "death"    = "#9467bd"   # purple (already good)
-)
+# Combine data and ensure consistent edition order
+freq_interest_combined <- freq_interest_chap_refined %>%
+  mutate(book = factor(book, levels = c("1818 Edition", "1831 Edition")))
 
-# Split by edition
-freq_1818_refined <- freq_interest_chap_refined %>% filter(book == "1818 Edition")
-freq_1831_refined <- freq_interest_chap_refined %>% filter(book == "1831 Edition")
+# Define edition color palette
+edition_colors <- c("1818 Edition" = "lightsalmon", "1831 Edition" = "turquoise3")
 
-# Create plotting function
-plot_interest_words_refined <- function(data, edition_title) {
-  ggplot(data, aes(x = chapter, y = n, color = word, group = word)) +
-    geom_line(linewidth = 1.2) +
-    scale_color_manual(values = cud_colors_refined) +
-    scale_x_continuous(breaks = seq(1, 24, by = 1), limits = c(1, 24)) +
-    labs(
-      title = paste("Interest Word Trends -", edition_title),
-      x = "Chapter", y = "Frequency", color = "Word"
-    ) +
-    theme_minimal(base_size = 13) +
-    theme(
-      strip.text = element_text(face = "bold"),
-      panel.grid.minor.x = element_blank(),
-      legend.position = "right"
-    )
-}
+# Generate faceted line plot: frequency per chapter per word, colored by edition
+interest_words_facet_plot <- ggplot(freq_interest_combined, aes(x = chapter, y = n, color = book)) +
+  geom_line(linewidth = 1.1) +
+  facet_wrap(~word, ncol = 2, scales = "free_y") +
+  scale_color_manual(values = edition_colors,, name = NULL) +
+  scale_x_continuous(breaks = 1:24, limits = c(1, 24)) +
+  labs(
+    title = "Interest Word Frequency by Chapter (Faceted by Word)",
+    x = "Chapter Number", y = "Frequency", color = "Edition"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    strip.text = element_text(face = "bold"),
+    legend.position = "bottom"  # <-- Legend moved here
+  )
 
-# Plot and Save for 1818 Edition
-plot_1818_refined <- plot_interest_words_refined(freq_1818_refined, "1818 Edition")
-print(plot_1818_refined)
-ggsave("EPS_Graphs/interest_words_by_chapter_1818_refined.eps", plot = plot_1818_refined, device = "eps", width = 10, height = 6)
-
-# Plot and Save for 1831 Edition
-plot_1831_refined <- plot_interest_words_refined(freq_1831_refined, "1831 Edition")
-print(plot_1831_refined)
-ggsave("EPS_Graphs/interest_words_by_chapter_1831_refined.eps", plot = plot_1831_refined, device = "eps", width = 10, height = 6)
-
+# Display and save as EPS
+print(interest_words_facet_plot)
+ggsave("EPS_Graphs/interest_words_by_chapter_facet.eps",plot = interest_words_facet_plot, device = "eps",width = 10, height = 7)
 
 
 # =====================================================
@@ -361,7 +347,13 @@ plot_bigram_graph <- function(book_name, color) {
     geom_node_point(color = color) +
     geom_node_text(aes(label = name), vjust = 1.5, hjust = 1, size = 3) +
     labs(title = paste("Bigram Network for", book_name)) +
-    theme_minimal(base_size = 13)
+    theme_minimal(base_size = 13)+
+    theme(
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      axis.ticks = element_blank()
+    )
+  
 }
 
 #plot_1818 <- plot_bigram_graph("1818 Edition", "lightsalmon")
